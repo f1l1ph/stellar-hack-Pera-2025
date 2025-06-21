@@ -14,3 +14,10 @@ fmt:
 
 clean:
 	cargo clean
+
+# this is not working
+bindings:
+	stellar contract build
+	stellar contract bindings typescript \
+		--wasm target/wasm32v1-none/release/options_contract.wasm \
+		--output-dir bindings
