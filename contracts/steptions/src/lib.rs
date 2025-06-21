@@ -1,9 +1,8 @@
-
 #![no_std]
 use soroban_sdk::{
     contract, contractimpl, contractmeta, contracttype, log, panic_with_error, symbol_short,
     token::{self, TokenClient},
-    Address, Env, Map, String, Symbol, Vec, Error,
+    Address, Env, Error, Map, String, Symbol, Vec,
 };
 
 // Contract metadata
@@ -450,10 +449,10 @@ impl OptionsContract {
                     let normalized_amount = option.amount / 10_000_000;
                     payoff = (current_price - option.strike)
                         * if normalized_amount == 0 {
-                        1
-                    } else {
-                        normalized_amount
-                    };
+                            1
+                        } else {
+                            normalized_amount
+                        };
                 }
             }
             OptionType::Put => {
@@ -461,10 +460,10 @@ impl OptionsContract {
                     let normalized_amount = option.amount / 10_000_000;
                     payoff = (option.strike - current_price)
                         * if normalized_amount == 0 {
-                        1
-                    } else {
-                        normalized_amount
-                    };
+                            1
+                        } else {
+                            normalized_amount
+                        };
                 }
             }
         }

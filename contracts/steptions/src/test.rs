@@ -1,9 +1,8 @@
-
 #![cfg(test)]
 use super::*;
 use soroban_sdk::{
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, MockAuth, MockAuthInvoke},
-    Address, Env, IntoVal, String, token,
+    token, Address, Env, IntoVal, String,
 };
 
 // Create a mock token contract for testing
@@ -31,7 +30,7 @@ impl TestToken {
     //     let token_client = token::StellarAssetClient::new(&self.env, &self.address);
     //     token_client(id)
     // }
-    // 
+    //
     // pub fn transfer(&self, from: &Address, to: &Address, amount: &i128) {
     //     let token_client = token::StellarAssetClient::new(&self.env, &self.address);
     //     token_client.transfer(from, to, amount);
@@ -94,12 +93,8 @@ fn test_add_liquidity_pool() {
     contract.initialize(&admin);
 
     // Add liquidity pool
-    let pool_id = contract.add_liquidity_pool(
-        &stable_token,
-        &underlying_asset,
-        &price_feed,
-        &pool_name,
-    );
+    let pool_id =
+        contract.add_liquidity_pool(&stable_token, &underlying_asset, &price_feed, &pool_name);
 
     // Verify pool was created
     assert_eq!(pool_id, 0);
@@ -133,20 +128,10 @@ fn test_add_duplicate_pool() {
     contract.initialize(&admin);
 
     // Add first pool
-    contract.add_liquidity_pool(
-        &stable_token,
-        &underlying_asset,
-        &price_feed,
-        &pool_name,
-    );
+    contract.add_liquidity_pool(&stable_token, &underlying_asset, &price_feed, &pool_name);
 
     // Try to add duplicate pool - should panic
-    contract.add_liquidity_pool(
-        &stable_token,
-        &underlying_asset,
-        &price_feed,
-        &pool_name,
-    );
+    contract.add_liquidity_pool(&stable_token, &underlying_asset, &price_feed, &pool_name);
 }
 
 #[test]
@@ -188,7 +173,6 @@ fn test_provide_liquidity() {
     assert_eq!(contract.get_pool_lp_shares(&pool_id, &provider), amount);
 }
 
-
 #[test]
 fn test_buy_call_option() {
     let env = Env::default();
@@ -226,17 +210,15 @@ fn test_buy_call_option() {
     let amount = 10_000_000i128; // 1 unit (1e7 scaling)
 
     // Mock authorization for the buyer specifically for token transfer
-    env.mock_auths(&[
-        MockAuth {
-            address: &buyer,
-            invoke: &MockAuthInvoke {
-                contract: &stable_token.address,
-                fn_name: "transfer",
-                args: (&buyer, &contract.address, 4200_0000000i128).into_val(&env), // Expected premium
-                sub_invokes: &[],
-            },
-        }
-    ]);
+    env.mock_auths(&[MockAuth {
+        address: &buyer,
+        invoke: &MockAuthInvoke {
+            contract: &stable_token.address,
+            fn_name: "transfer",
+            args: (&buyer, &contract.address, 4200_0000000i128).into_val(&env), // Expected premium
+            sub_invokes: &[],
+        },
+    }]);
 
     let option_id = contract.buy_option(
         &pool_id,
@@ -260,23 +242,26 @@ fn test_buy_call_option() {
 
     // Verify collateral was locked
     let expected_collateral = strike * amount / 10_000_000;
-    assert_eq!(contract.get_pool_locked_collateral(&pool_id), expected_collateral);
+    assert_eq!(
+        contract.get_pool_locked_collateral(&pool_id),
+        expected_collateral
+    );
 }
-// 
+//
 // #[test]
 // fn test_exercise_call_option_in_the_money() {
 //     let env = Env::default();
 //     env.mock_all_auths();
-// 
+//
 //     let admin = Address::generate(&env);
 //     let buyer = Address::generate(&env);
 //     let contract = create_test_contract(&env);
-// 
+//
 //     let stable_token = create_token_contract(&env, &admin);
 //     let underlying_asset = Address::generate(&env);
 //     let price_feed = Address::generate(&env);
 //     let pool_name = String::from_str(&env, "BTC/USDC Pool");
-// 
+//
 //     // Setup
 //     contract.initialize(&admin);
 //     let pool_id = contract.add_liquidity_pool(
@@ -285,18 +270,18 @@ fn test_buy_call_option() {
 //         &price_feed,
 //         &pool_name,
 //     );
-// 
+//
 //     // Provide liquidity and buy option
 //     let provider = Address::generate(&env);
 //     stable_token.mint(&provider, &100000);
 //     contract.provide_liquidity(&pool_id, &provider, &50000);
-// 
+//
 //     stable_token.mint(&buyer, &10000);
-// 
+//
 //     let strike = 1900_0000000i128; // $1900 (below current price of $2000)
 //     let expiry = env.ledger().timestamp() + 86400;
 //     let amount = 10_000_000i128;
-// 
+//
 //     let option_id = contract.buy_option(
 //         &pool_id,
 //         &buyer,
@@ -305,39 +290,39 @@ fn test_buy_call_option() {
 //         &expiry,
 //         &amount,
 //     );
-// 
+//
 //     let initial_buyer_balance = stable_token.balance(&buyer);
-// 
+//
 //     // Exercise option (current price is $2000, strike is $1900, so it's in the money)
 //     let payoff = contract.exercise_option(&option_id);
-// 
+//
 //     // Verify payoff (should be $100 = $2000 - $1900)
 //     let expected_payoff = (2000_0000000i128 - strike) * 1; // normalized amount = 1
 //     assert_eq!(payoff, expected_payoff);
-// 
+//
 //     // Verify option status
 //     let option = contract.get_option(&option_id);
 //     assert_eq!(option.is_active, false);
 //     assert_eq!(option.is_exercised, true);
-// 
+//
 //     // Verify buyer received payoff
 //     assert_eq!(stable_token.balance(&buyer), initial_buyer_balance + payoff);
 // }
-// 
+//
 // #[test]
 // fn test_withdraw_liquidity() {
 //     let env = Env::default();
 //     env.mock_all_auths();
-// 
+//
 //     let admin = Address::generate(&env);
 //     let provider = Address::generate(&env);
 //     let contract = create_test_contract(&env);
-// 
+//
 //     let stable_token = create_token_contract(&env, &admin);
 //     let underlying_asset = Address::generate(&env);
 //     let price_feed = Address::generate(&env);
 //     let pool_name = String::from_str(&env, "BTC/USDC Pool");
-// 
+//
 //     // Setup
 //     contract.initialize(&admin);
 //     let pool_id = contract.add_liquidity_pool(
@@ -346,18 +331,18 @@ fn test_buy_call_option() {
 //         &price_feed,
 //         &pool_name,
 //     );
-// 
+//
 //     // Provide liquidity
 //     stable_token.mint(&provider, &10000);
 //     let amount = 1000i128;
 //     let shares = contract.provide_liquidity(&pool_id, &provider, &amount);
-// 
+//
 //     let initial_balance = stable_token.balance(&provider);
-// 
+//
 //     // Withdraw half the liquidity
 //     let withdraw_shares = shares / 2;
 //     let withdrawn_amount = contract.withdraw_liquidity(&pool_id, &provider, &withdraw_shares);
-// 
+//
 //     // Verify withdrawal
 //     assert_eq!(withdrawn_amount, amount / 2);
 //     assert_eq!(stable_token.balance(&provider), initial_balance + withdrawn_amount);
@@ -385,12 +370,7 @@ fn test_get_all_pools() {
         let price_feed = Address::generate(&env);
         let pool_name = String::from_str(&env, "Pool");
 
-        contract.add_liquidity_pool(
-            &stable_token,
-            &underlying_asset,
-            &price_feed,
-            &pool_name,
-        );
+        contract.add_liquidity_pool(&stable_token, &underlying_asset, &price_feed, &pool_name);
     }
 
     // Verify all pools are returned
@@ -415,12 +395,8 @@ fn test_set_pool_status() {
     let pool_name = String::from_str(&env, "BTC/USDC Pool");
 
     contract.initialize(&admin);
-    let pool_id = contract.add_liquidity_pool(
-        &stable_token,
-        &underlying_asset,
-        &price_feed,
-        &pool_name,
-    );
+    let pool_id =
+        contract.add_liquidity_pool(&stable_token, &underlying_asset, &price_feed, &pool_name);
 
     // Pool should be active by default
     let pool = contract.get_pool(&pool_id);
