@@ -1,4 +1,5 @@
 #![no_std]
+use sep_40_oracle::{Asset, PriceData, PriceFeedClient, PriceFeedTrait};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, contracttype, log, panic_with_error, symbol_short,
     token::{self, TokenClient},
@@ -35,6 +36,41 @@ pub enum DataKey {
     // Options
     OptionCounter,
     Option(u64),
+}
+
+#[contract]
+pub struct MyPriceFeed;
+
+#[contractimpl]
+impl PriceFeedTrait for MyPriceFeed {
+    fn base(env: Env) -> Asset {
+        todo!()
+    }
+
+    fn assets(env: Env) -> Vec<Asset> {
+        todo!()
+    }
+
+    fn decimals(env: Env) -> u32 {
+        todo!()
+    }
+
+    fn resolution(env: Env) -> u32 {
+        todo!()
+    }
+
+    fn price(env: Env, asset: Asset, timestamp: u64) -> Option<PriceData> {
+        todo!()
+    }
+
+    fn prices(env: Env, asset: Asset, records: u32) -> Option<Vec<PriceData>> {
+        todo!()
+    }
+
+    fn lastprice(env: Env, asset: Asset) -> Option<PriceData> {
+        todo!()
+    }
+    // impl the trait functions
 }
 
 // Liquidity Pool struct
@@ -92,6 +128,7 @@ pub enum OptionsError {
     PoolNotFound = 12,
     PoolNotActive = 13,
     PoolAlreadyExists = 14,
+    InvalidPrice = 15,
 }
 
 impl From<OptionsError> for Error {
@@ -608,11 +645,29 @@ impl OptionsContract {
             .unwrap_or_else(|| panic_with_error!(&env, OptionsError::NotInitialized))
     }
 
-    // Mock price feed function - replace with actual oracle integration
+    // Get price from SEP-40 oracle
     pub fn get_price_from_feed(env: Env, price_feed: Address) -> i128 {
-        // This is a placeholder - you'd integrate with Stellar price oracles
-        // Different pools would have different price feeds
-        2000_0000000i128 // $2000 in 1e7 scaling
+        // Create a client for the SEP-40 price feed oracle
+        let price_feed_client = PriceFeedClient::new(&env, &price_feed);
+
+        // Create an Asset instance for the asset we want to get the price for
+        // In this case, we're using the default asset (typically the base asset of the oracle)
+        let asset = Asset::Other(Symbol::new(&env, "XLM"));
+
+        // Get the latest price from the oracle
+        let price_data_opt = price_feed_client.lastprice(&asset);
+
+        // Handle the Option<PriceData> return type
+        match price_data_opt {
+            Some(price_data) => {
+                // Extract the price from the PriceData
+                price_data.price
+            }
+            None => {
+                // If no price is available, panic with an error
+                panic_with_error!(&env, OptionsError::InvalidPrice);
+            }
+        }
     }
 
     // Admin function to update price feed for a pool
